@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "totem-of-shadow",
+  "version": "$version",
+  "name": "Totem of Shadow!",
+  "description": "Fool your enemy from the shadow of you!",
+  "authors": [
+    "YeYu"
+  ],
+  "contact": {
+    "homepage": "https://github.com/ye-yu",
+    "sources": "https://github.com/ye-yu"
+  },
+  "license": "CC0-1.0",
+  "icon": "assets/totemofshadow/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "fp.yeyu.tos.TOSEntry"
+    ],
+    "main": [
+      "fp.yeyu.tos.TOSEntry"
+    ]
+  },
+  "mixins": [
+    "tosyeyu.mixins.json"
+  ],
+  "suggests": {
+    "flamingo": "*"
+  }
+}
