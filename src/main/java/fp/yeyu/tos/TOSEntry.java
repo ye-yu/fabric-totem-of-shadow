@@ -1,13 +1,19 @@
 package fp.yeyu.tos;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.rendereregistry.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.mob.PathAwareEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
@@ -26,9 +32,10 @@ public class TOSEntry implements ModInitializer, ClientModInitializer {
     public static volatile EntityType<ShadowEntity> SHADOW_ENTITY;
 
     @Override
+    @Environment(EnvType.CLIENT)
     public void onInitializeClient() {
         LOGGER.info("Initialized client mod.");
-        EntityRendererRegistry.INSTANCE.register(SHADOW_ENTITY, ShadowEntityRenderer::new);
+        EntityRendererRegistry.INSTANCE.register(SHADOW_ENTITY, (dispatcher, context) -> new ShadowEntityRenderer(dispatcher));
     }
 
     @Override
@@ -41,7 +48,7 @@ public class TOSEntry implements ModInitializer, ClientModInitializer {
                         .create(SpawnGroup.MONSTER, ShadowEntity::new)
                         .dimensions(EntityDimensions.fixed(0.6f, 1.8f)).build()
         );
-        FabricDefaultAttributeRegistry.register(SHADOW_ENTITY, ShadowEntity.createLivingAttributes());
+        FabricDefaultAttributeRegistry.register(SHADOW_ENTITY, PathAwareEntity.createMobAttributes());
         LOGGER.info("Initialized main mod.");
     }
 }

@@ -12,11 +12,13 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -35,7 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-public class ShadowEntity extends LivingEntity {
+public class ShadowEntity extends PathAwareEntity {
 
     private ItemStack main;
     public final DefaultedList<ItemStack> armor;
@@ -43,7 +45,7 @@ public class ShadowEntity extends LivingEntity {
     protected PlayerListEntry copyingClientEntry;
     protected static final TrackedData<Optional<UUID>> COPYING_UUID = DataTracker.registerData(ShadowEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     protected PlayerEntity copyingEntity;
-    private static final int UPDATE_MOB_CALLING_TICK_DEF = 30;
+    private static final int UPDATE_MOB_CALLING_TICK_DEF = 60;
     private int updateMobCallingTick = 5;
 
     public ShadowEntity(EntityType<? extends ShadowEntity> shadowEntityEntityType, World world) {
@@ -58,6 +60,12 @@ public class ShadowEntity extends LivingEntity {
     protected void initDataTracker() {
         super.initDataTracker();
         this.dataTracker.startTracking(COPYING_UUID, Optional.empty());
+    }
+
+    @Override
+    protected void initGoals() {
+        super.initGoals();
+        this.goalSelector.add(0, new ShadowRunGoal(this));
     }
 
     @Override
@@ -150,10 +158,12 @@ public class ShadowEntity extends LivingEntity {
         if (copyingEntity == null) return;
         updateMobCallingTick = --updateMobCallingTick % UPDATE_MOB_CALLING_TICK_DEF;
         if (updateMobCallingTick != 0) return;
-        world.getEntitiesByClass(HostileEntity.class,
-                new Box(getBlockPos()).expand(20),
+        world.getEntitiesByClass(MobEntity.class,
+                new Box(getBlockPos()).expand(40),
                 he -> Objects.equals(he.getTarget(), copyingEntity))
-                .forEach(he -> he.setTarget(this));
+                .forEach(he -> {
+                    if (random.nextDouble() < 0.67) he.setTarget(this);
+                });
     }
 
     @Override
@@ -234,5 +244,17 @@ public class ShadowEntity extends LivingEntity {
                 }
             }
         } else world.sendEntityStatus(this, (byte) 81);
+    }
+
+    private static class ShadowRunGoal extends EscapeDangerGoal {
+
+        public ShadowRunGoal(PathAwareEntity mob) {
+            super(mob, 0.8);
+        }
+
+        @Override
+        public boolean canStart() {
+            return this.findTarget();
+        }
     }
 }

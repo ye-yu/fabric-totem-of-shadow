@@ -3,6 +3,7 @@ package fp.yeyu.tos;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.rendereregistry.v1.EntityRendererRegistry;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
@@ -13,6 +14,7 @@ import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.CrossbowItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -31,8 +33,9 @@ import net.minecraft.util.math.Vec3d;
 @Environment(EnvType.CLIENT)
 public class ShadowEntityRenderer extends LivingEntityRenderer<ShadowEntity, PlayerEntityModel<ShadowEntity>> {
 
-    public ShadowEntityRenderer(EntityRenderDispatcher dispatcher, boolean slimModel) {
-        super(dispatcher, new PlayerEntityModel<>(0.0F, slimModel), 0.5F);
+    private boolean reconfiguredSlim = false;
+    public ShadowEntityRenderer(EntityRenderDispatcher dispatcher) {
+        super(dispatcher, new PlayerEntityModel<>(0.0F, false), 0.5F);
         this.addFeature(new ArmorFeatureRenderer<>(this, new BipedEntityModel<>(0.5F), new BipedEntityModel<>(1.0F)));
         this.addFeature(new HeldItemFeatureRenderer<>(this));
         this.addFeature(new StuckArrowsFeatureRenderer<>(this));
@@ -42,11 +45,13 @@ public class ShadowEntityRenderer extends LivingEntityRenderer<ShadowEntity, Pla
         this.addFeature(new StuckStingersFeatureRenderer<>(this));
     }
 
-    public ShadowEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, EntityRendererRegistry.Context context) {
-        this(entityRenderDispatcher, false);
-    }
-
     public void render(ShadowEntity shadowEntity, float yaw, float tickDelta, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light) {
+        final PlayerEntity copyingEntity = shadowEntity.copyingEntity;
+        if (copyingEntity instanceof AbstractClientPlayerEntity && !reconfiguredSlim) {
+            final boolean isSlim = ((AbstractClientPlayerEntity) copyingEntity).getModel().equals("slim");
+            this.model = new PlayerEntityModel<>(0, isSlim);
+            reconfiguredSlim = true;
+        }
         this.setModelPose(shadowEntity);
         super.render(shadowEntity, yaw, tickDelta, matrixStack, vertexConsumerProvider, light);
     }
