@@ -2,6 +2,7 @@ package fp.yeyu.tos;
 
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.MobEntityRenderer;
+import net.minecraft.client.render.entity.feature.HeadFeatureRenderer;
 import net.minecraft.util.Identifier;
 
 public class SpiritEntityRenderer extends MobEntityRenderer<SpiritEntity, SpiritEntityModel> {
@@ -10,6 +11,7 @@ public class SpiritEntityRenderer extends MobEntityRenderer<SpiritEntity, Spirit
 
     public SpiritEntityRenderer(EntityRenderDispatcher entityRenderDispatcher, SpiritEntityModel entityModel, float shadowRadius) {
         super(entityRenderDispatcher, entityModel, shadowRadius);
+        addFeature(new SpiritEntityHeadFeatureRenderer(this));
     }
 
     public SpiritEntityRenderer(EntityRenderDispatcher dispatcher) {

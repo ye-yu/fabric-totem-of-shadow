@@ -1,6 +1,5 @@
 package fp.yeyu.tos;
 
-import fp.yeyu.tos.mixinsutil.EntityYawPitchAccessible;
 import io.github.yeyu.easing.EaseInImpl;
 import io.github.yeyu.easing.EaseInOutImpl;
 import io.github.yeyu.easing.function.InverseQuadratic;
@@ -8,20 +7,15 @@ import io.github.yeyu.easing.function.QuadraticFunction;
 import io.github.yeyu.easing.interpolator.DoubleToDoubleInterpolator;
 import io.github.yeyu.easing.player.PersistentFramefulEasePlayer;
 import io.github.yeyu.easing.player.ReversingFramefulEasePlayer;
-import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
 import net.minecraft.entity.*;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.Packet;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Arm;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.MathHelper;
@@ -34,7 +28,7 @@ import java.util.List;
 public class SpiritEntity extends MobEntity {
 
     public static final DefaultedList<ItemStack> DEF = DefaultedList.ofSize(1, ItemStack.EMPTY);
-    public static final double Y_MODIFIER_FACTOR = 0.75;
+    public static final double Y_MODIFIER_FACTOR = 0.5;
     private static final float MAX_DISTANCE_TO_TRACK_NEW = 20;
     protected ReversingFramefulEasePlayer<Double> posPlayer = null;
     protected PersistentFramefulEasePlayer<Double> pitchPlayer = null;
@@ -74,16 +68,6 @@ public class SpiritEntity extends MobEntity {
 
     private void updateTracking() {
         if (tracking == null || tracking.distanceTo(this) > MAX_DISTANCE_TO_TRACK_NEW) findNewPlayerToTrack();
-        final double trackingYaw = tracking == null ? random.nextDouble() * 360 - 180 : MathHelper.clamp((double) tracking.headYaw, 0, 360);
-        final double trackingPitch = tracking == null ? random.nextDouble() * 10 : (double) tracking.pitch;
-        yawPlayer = new PersistentFramefulEasePlayer<>(
-                new EaseInImpl<>((double) yaw, trackingYaw, QuadraticFunction.INSTANCE, DoubleToDoubleInterpolator.INSTANCE),
-                10
-        );
-        pitchPlayer = new PersistentFramefulEasePlayer<>(
-                new EaseInImpl<>((double) pitch, trackingPitch, QuadraticFunction.INSTANCE, DoubleToDoubleInterpolator.INSTANCE),
-                10
-        );
     }
 
     private void findNewPlayerToTrack() {
@@ -135,9 +119,51 @@ public class SpiritEntity extends MobEntity {
             updateTracking();
         }
         updatePosition(x, y, z);
-        if (tracking == null) return;
         lookAtEntity(tracking, 360f, 360f);
-        ((EntityYawPitchAccessible) this).onYawPitchUpdate(this.yaw, this.pitch);
+    }
+
+    @Override
+    public void lookAtEntity(Entity targetEntity, float maxYawChange, float maxPitchChange) {
+        double dirX = targetEntity.getX() - this.getX();
+        double dirZ = targetEntity.getZ() - this.getZ();
+        double multiplier;
+        if (targetEntity instanceof LivingEntity) {
+            LivingEntity livingEntity = (LivingEntity)targetEntity;
+            multiplier = livingEntity.getEyeY() - this.getEyeY();
+        } else {
+            multiplier = (targetEntity.getBoundingBox().minY + targetEntity.getBoundingBox().maxY) / 2.0D - this.getEyeY();
+        }
+
+        double h = MathHelper.sqrt(dirX * dirX + dirZ * dirZ);
+        float yaw = (float)(MathHelper.atan2(dirZ, dirX) * 57.2957763671875D) - 90.0F;
+        float pitch = (float)(-(MathHelper.atan2(multiplier, h) * 57.2957763671875D));
+        onYawPitchUpdate(yaw, pitch);
+        this.headYaw = yaw;
+//        this.pitch = this.changeAngle(this.pitch, pitch, maxPitchChange);
+//        this.yaw = this.changeAngle(this.yaw, yaw, maxYawChange);
+    }
+
+
+    public void onYawPitchUpdate(float yaw, float pitch) {
+        pitch = MathHelper.clamp(pitch, -90.0F, 90.0F);
+        yaw = MathHelper.clamp(yaw, 0F, 360.0F);
+        if (yawPlayer != null) yawPlayer.setTransitionTo((double) yaw);
+        else this.yaw = yaw;
+
+        if (pitchPlayer != null) pitchPlayer.setTransitionTo((double) pitch);
+        else this.pitch = pitch;
+//        this.prevBodyYaw = this.bodyYaw;
+//        this.prevHeadYaw = this.headYaw;
+//        this.bodyYaw = yaw;
+//        this.headYaw = yaw;
+//        this.serverHeadYaw = yaw;
+//        this.serverYaw = yaw;
+//        this.yaw = yaw;
+//
+//        this.serverPitch = pitch;
+//        this.serverPitch = MathHelper.clamp(this.serverPitch, -90.0F, 90.0F);
+//        this.pitch = pitch;
+//        this.pitch = MathHelper.clamp(this.pitch, -90.0F, 90.0F);
     }
 
     private void configureEasePlayer() {
