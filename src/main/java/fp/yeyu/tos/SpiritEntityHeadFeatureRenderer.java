@@ -88,7 +88,7 @@ public class SpiritEntityHeadFeatureRenderer extends FeatureRenderer<SpiritEntit
         MinecraftClient minecraftClient = MinecraftClient.getInstance();
         Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> map = minecraftClient.getSkinProvider().getTextures(gameProfile);
         return map.containsKey(MinecraftProfileTexture.Type.SKIN) ?
-                RenderLayer.getEntityAlpha(minecraftClient.getSkinProvider().loadSkin(map.get(MinecraftProfileTexture.Type.SKIN), MinecraftProfileTexture.Type.SKIN), 0.5f) :
+                RenderLayer.getEntityTranslucent(minecraftClient.getSkinProvider().loadSkin(map.get(MinecraftProfileTexture.Type.SKIN), MinecraftProfileTexture.Type.SKIN)) :
                 RenderLayer.getEntityTranslucent(DefaultSkinHelper.getTexture(PlayerEntity.getUuidFromProfile(gameProfile)));
     }
 

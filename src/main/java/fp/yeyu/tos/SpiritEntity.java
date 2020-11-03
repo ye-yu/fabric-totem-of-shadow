@@ -119,6 +119,7 @@ public class SpiritEntity extends MobEntity {
             updateTracking();
         }
         updatePosition(x, y, z);
+        if (tracking == null) return;
         lookAtEntity(tracking, 360f, 360f);
     }
 
