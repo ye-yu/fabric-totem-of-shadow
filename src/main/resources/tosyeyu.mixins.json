@@ -1,9 +1,10 @@
 {
   "required": true,
   "package": "fp.yeyu.tos.mixins",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_11",
   "mixins": [
-    "ClientPlayerNetworkHandlerMixin"
+    "ClientPlayerNetworkHandlerMixin",
+    "LivingEntityMixin"
   ],
   "client": [
   ],

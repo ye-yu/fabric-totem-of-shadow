@@ -16,7 +16,6 @@ import net.minecraft.entity.ai.goal.EscapeDangerGoal;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -66,6 +65,11 @@ public class ShadowEntity extends PathAwareEntity {
     protected void initGoals() {
         super.initGoals();
         this.goalSelector.add(0, new ShadowRunGoal(this));
+    }
+
+    @Override
+    public boolean canImmediatelyDespawn(double distanceSquared) {
+        return false;
     }
 
     @Override

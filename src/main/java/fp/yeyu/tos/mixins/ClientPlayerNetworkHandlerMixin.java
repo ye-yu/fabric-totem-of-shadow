@@ -56,7 +56,7 @@ public class ClientPlayerNetworkHandlerMixin {
             ((ShadowEntity) livingEntity).getPlayerListEntry();
             world.addEntity(packet.getId(), livingEntity);
         } else {
-            LOGGER.warn("Skipping Entity with id {}", packet.getEntityTypeId());
+            LOGGER.warn("Skipping Entity with id " + packet.getEntityTypeId());
         }
         callbackInfo.cancel();
     }
