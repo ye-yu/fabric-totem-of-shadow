@@ -38,11 +38,13 @@ import java.util.UUID;
 
 public class ShadowEntity extends PathAwareEntity {
 
+    private static final UUID BAD_UUID = new UUID(1, 0);
     private ItemStack main;
     public final DefaultedList<ItemStack> armor;
     private ItemStack offHand;
     protected PlayerListEntry copyingClientEntry;
     protected static final TrackedData<Optional<UUID>> COPYING_UUID = DataTracker.registerData(ShadowEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
+    protected UUID copyingUuid;
     protected PlayerEntity copyingEntity;
     private static final int UPDATE_MOB_CALLING_TICK_DEF = 60;
     private int updateMobCallingTick = 5;
@@ -117,6 +119,7 @@ public class ShadowEntity extends PathAwareEntity {
 
     public void setCopyingUUID(UUID uuid) {
         dataTracker.set(COPYING_UUID, Optional.of(uuid));
+        copyingUuid = uuid;
     }
 
     @Environment(EnvType.CLIENT)
@@ -173,8 +176,14 @@ public class ShadowEntity extends PathAwareEntity {
     @Override
     public void writeCustomDataToTag(CompoundTag tag) {
         super.writeCustomDataToTag(tag);
-        tag.putUuid("copyingUuid", copyingEntity.getUuid());
-        tag.putString("copyingName", copyingEntity.getEntityName());
+
+        final UUID uuid = copyingEntity == null ?
+                copyingUuid == null ?
+                        BAD_UUID
+                        : copyingUuid
+                : copyingEntity.getUuid();
+        tag.putUuid("copyingUuid", uuid);
+        tag.putString("copyingName", copyingEntity == null ? getEntityName() : copyingEntity.getEntityName());
     }
 
     @Override
