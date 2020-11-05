@@ -24,30 +24,40 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Iterator;
 import java.util.List;
 
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extends EntityModel<T>> extends EntityRenderer<T> implements FeatureRendererContext<T, M> {
 
 
-    @Shadow protected M model;
+    @Shadow
+    protected M model;
 
-    @Shadow protected abstract float getHandSwingProgress(T entity, float tickDelta);
+    @Shadow
+    protected abstract float getHandSwingProgress(T entity, float tickDelta);
 
-    @Shadow protected abstract float getAnimationProgress(T entity, float tickDelta);
+    @Shadow
+    protected abstract float getAnimationProgress(T entity, float tickDelta);
 
-    @Shadow protected abstract void setupTransforms(T entity, MatrixStack matrices, float animationProgress, float bodyYaw, float tickDelta);
+    @Shadow
+    protected abstract void setupTransforms(T entity, MatrixStack matrices, float animationProgress, float bodyYaw, float tickDelta);
 
-    @Shadow protected abstract void scale(T entity, MatrixStack matrices, float amount);
+    @Shadow
+    protected abstract void scale(T entity, MatrixStack matrices, float amount);
 
-    @Shadow protected abstract boolean isVisible(T entity);
+    @Shadow
+    protected abstract boolean isVisible(T entity);
 
-    @Shadow protected @Nullable abstract RenderLayer getRenderLayer(T entity, boolean showBody, boolean translucent, boolean showOutline);
+    @Shadow
+    protected @Nullable
+    abstract RenderLayer getRenderLayer(T entity, boolean showBody, boolean translucent, boolean showOutline);
 
-    @Shadow protected abstract float getAnimationCounter(T entity, float tickDelta);
+    @Shadow
+    protected abstract float getAnimationCounter(T entity, float tickDelta);
 
-    @Shadow @Final protected List<FeatureRenderer<T, M>> features;
+    @Shadow
+    @Final
+    protected List<FeatureRenderer<T, M>> features;
 
     protected LivingEntityRendererMixin(EntityRenderDispatcher dispatcher) {
         super(dispatcher);
@@ -66,7 +76,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extend
         float yawDiff = nextHeadYaw - nextBodyYaw;
         float nextYaw;
         if (spiritEntity.hasVehicle() && spiritEntity.getVehicle() instanceof LivingEntity) {
-            LivingEntity livingEntity2 = (LivingEntity)spiritEntity.getVehicle();
+            LivingEntity livingEntity2 = (LivingEntity) spiritEntity.getVehicle();
             nextBodyYaw = MathHelper.lerpAngleDegrees(tickDelta, livingEntity2.prevBodyYaw, livingEntity2.bodyYaw);
             yawDiff = nextHeadYaw - nextBodyYaw;
             nextYaw = MathHelper.wrapDegrees(yawDiff);
@@ -92,7 +102,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, M extend
             Direction direction = spiritEntity.getSleepingDirection();
             if (direction != null) {
                 sleepingField = spiritEntity.getEyeHeight(EntityPose.STANDING) - 0.1F;
-                matrixStack.translate((float)(-direction.getOffsetX()) * sleepingField, 0.0D, (float)(-direction.getOffsetZ()) * sleepingField);
+                matrixStack.translate((float) (-direction.getOffsetX()) * sleepingField, 0.0D, (float) (-direction.getOffsetZ()) * sleepingField);
             }
         }
 

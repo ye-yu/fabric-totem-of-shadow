@@ -4,8 +4,8 @@
   "compatibilityLevel": "JAVA_11",
   "mixins": [
     "ClientPlayerNetworkHandlerMixin",
-    "LivingEntityMixin",
-    "LivingEntityRendererMixin"
+    "LivingEntityRendererMixin",
+    "LuminanceAccessible"
   ],
   "client": [
   ],

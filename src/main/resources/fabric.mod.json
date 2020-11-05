@@ -20,6 +20,9 @@
     ],
     "main": [
       "fp.yeyu.tos.TOSEntry"
+    ],
+    "dynamiclights": [
+      "fp.yeyu.tos.DynamicLightingCompat"
     ]
   },
   "mixins": [
