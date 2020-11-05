@@ -1,6 +1,6 @@
 package fp.yeyu.tos.mixins;
 
-import fp.yeyu.tos.SpiritEntity;
+import fp.yeyu.tos.entity.SpiritEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;

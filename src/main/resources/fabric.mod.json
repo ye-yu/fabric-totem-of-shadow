@@ -16,10 +16,16 @@
   "environment": "*",
   "entrypoints": {
     "client": [
-      "fp.yeyu.tos.TOSEntry"
+      {
+        "value": "fp.yeyu.tos.TotemOfShadowEntry",
+        "adapter": "kotlin"
+      }
     ],
     "main": [
-      "fp.yeyu.tos.TOSEntry"
+      {
+        "value": "fp.yeyu.tos.TotemOfShadowEntry",
+        "adapter": "kotlin"
+      }
     ],
     "dynamiclights": [
       "fp.yeyu.tos.DynamicLightingCompat"

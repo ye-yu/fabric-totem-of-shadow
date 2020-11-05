@@ -1,7 +1,7 @@
 package fp.yeyu.tos.mixins;
 
-import fp.yeyu.tos.ShadowEntity;
-import fp.yeyu.tos.ShadowEntityMobSpawnS2CPacket;
+import fp.yeyu.tos.entity.ShadowEntity;
+import fp.yeyu.tos.entity.ShadowEntityMobSpawnS2CPacket;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -52,7 +52,7 @@ public class ClientPlayerNetworkHandlerMixin {
             livingEntity.setUuid(packet.getUuid());
             livingEntity.updatePositionAndAngles(d, e, f, g, h);
             livingEntity.setVelocity(packet.getVelocityX() / 8000.0F, packet.getVelocityY() / 8000.0F, packet.getVelocityZ() / 8000.0F);
-            if (packet.getCopyingUuid() != null) ((ShadowEntity) livingEntity).setCopyingUUID(packet.getCopyingUuid());
+            ((ShadowEntity) livingEntity).setCopyingUUID(packet.getCopyingUuid());
             ((ShadowEntity) livingEntity).getPlayerListEntry();
             world.addEntity(packet.getId(), livingEntity);
         } else {

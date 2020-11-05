@@ -22,7 +22,7 @@ public class DynamicLightingCompat implements DynamicLightsInitializer {
      */
     @Override
     public void onInitializeDynamicLights() {
-        DynamicLightHandlers.registerDynamicLightHandler(TOSEntry.SPIRIT_ENTITY, DynamicLightHandler.makeHandler(
+        DynamicLightHandlers.registerDynamicLightHandler(TotemOfShadowEntry.INSTANCE.getSpiritEntity(), DynamicLightHandler.makeHandler(
                 spiritEntity -> 12,
                 spiritEntity -> false
         ));
