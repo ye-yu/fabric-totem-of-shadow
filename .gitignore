@@ -17,4 +17,4 @@ log/
 run/
 minecraft/
 
-*.jar
+libs/
