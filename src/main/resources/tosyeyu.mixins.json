@@ -3,12 +3,9 @@
   "package": "fp.yeyu.tos.mixins",
   "compatibilityLevel": "JAVA_11",
   "mixins": [
-    "BlockPosMutableMixin",
     "ClientPlayerNetworkHandlerMixin",
     "DefaultBiomeCreatorMixin",
-    "LivingEntityRendererMixin",
-    "LuminanceAccessible",
-    "Vec3dCoordinateAccessible"
+    "LivingEntityRendererMixin"
   ],
   "client": [
   ],

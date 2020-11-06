@@ -10,6 +10,7 @@ import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricDefaultAttributeRegistry
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
 import net.fabricmc.fabric.api.client.rendereregistry.v1.EntityRendererRegistry
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.client.render.entity.EntityRenderDispatcher
 import net.minecraft.entity.EntityDimensions
 import net.minecraft.entity.EntityType
@@ -53,6 +54,7 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
         logger.info("Registered ${shadowEntity.name}")
 
         PotionUtil.addHealthBoostPotionAndRecipe()
+
     }
 
     override fun onInitializeClient() {
