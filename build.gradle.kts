@@ -21,6 +21,7 @@ repositories {
 }
 
 minecraft {
+  accessWidener("src/main/resources/totemofshadow.aw")
 }
 
 dependencies {
@@ -44,13 +45,13 @@ dependencies {
 
   modImplementation("me.lambdaurora:lambdynamiclights:1.3.2+1.16.4")
   modRuntime("com.github.lambdaurora:spruceui:1.6.4")
-  runtime("org.aperlambda.lambdacommon:lambdajcommon:1.8.1")
-  runtime("com.electronwill.night-config:core:3.6.3")
-  runtime("com.electronwill.night-config:toml:3.6.3")
+  runtimeOnly("org.aperlambda.lambdacommon:lambdajcommon:1.8.1")
+  runtimeOnly("com.electronwill.night-config:core:3.6.3")
+  runtimeOnly("com.electronwill.night-config:toml:3.6.3")
 }
 
 tasks {
-  val sourcesJar by creating(Jar::class) {
+  @Suppress("UNUSED_VARIABLE") val sourcesJar by creating(Jar::class) {
     archiveClassifier.set("sources")
 
     from(sourceSets["main"].allSource)
@@ -58,7 +59,7 @@ tasks {
     dependsOn(JavaPlugin.CLASSES_TASK_NAME)
   }
 
-  val javadocJar by creating(Jar::class) {
+  @Suppress("UNUSED_VARIABLE") val javadocJar by creating(Jar::class) {
     archiveClassifier.set("javadoc")
 
     from(project.tasks["javadoc"])
