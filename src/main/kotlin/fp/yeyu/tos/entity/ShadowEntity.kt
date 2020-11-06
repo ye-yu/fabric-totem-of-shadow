@@ -40,14 +40,17 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
     var copyingEntity: PlayerEntity? = null
 
     private val badUuid = UUID(1, 0)
-    private val trackedCopyingUuid = DataTracker.registerData(ShadowEntity::class.java, TrackedDataHandlerRegistry.OPTIONAL_UUID)
     private val updateMobCallingTickDefault = 60
 
     private var updateMobCallingTick = 5
 
+    companion object {
+        private val TRACKED_COPYING_UUID = DataTracker.registerData(ShadowEntity::class.java, TrackedDataHandlerRegistry.OPTIONAL_UUID)
+    }
+
     override fun initDataTracker() {
         super.initDataTracker()
-        dataTracker.startTracking<Optional<UUID>>(trackedCopyingUuid, Optional.empty())
+        dataTracker.startTracking<Optional<UUID>>(TRACKED_COPYING_UUID, Optional.empty())
     }
 
     override fun initGoals() {
@@ -89,17 +92,17 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
     }
 
     fun setCopyingUUID(uuid: UUID) {
-        dataTracker.set<Optional<UUID>>(trackedCopyingUuid, Optional.of(uuid))
+        dataTracker.set<Optional<UUID>>(TRACKED_COPYING_UUID, Optional.of(uuid))
         copyingUuid = uuid
     }
 
     @get:Environment(EnvType.CLIENT)
     val playerListEntry: PlayerListEntry?
         get() {
-            if (copyingClientEntry == null && trackedCopyingUuid != null) {
+            if (copyingClientEntry == null && TRACKED_COPYING_UUID != null) {
                 val instance = MinecraftClient.getInstance() ?: return null
                 val networkHandler = instance.networkHandler ?: return null
-                val uuid = dataTracker.get(trackedCopyingUuid)
+                val uuid = dataTracker.get(TRACKED_COPYING_UUID)
                 copyingClientEntry = networkHandler.getPlayerListEntry(uuid.orElse(Optional.ofNullable(instance.player).map { obj: ClientPlayerEntity -> obj.uuid }.orElse(null)))
                         ?: return null
                 copyingEntity = OtherClientPlayerEntity(world as ClientWorld, copyingClientEntry?.profile)

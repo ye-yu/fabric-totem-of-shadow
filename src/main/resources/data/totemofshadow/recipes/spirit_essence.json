@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "###",
+    "SSS",
+    " # "
+  ],
+  "key": {
+    "#": {
+      "tag": "wool"
+    },
+    "S": {
+      "item": "totemofshadow:spirit_essence"
+    }
+  },
+  "result": {
+    "item": "totemofshadow:totem_of_shadow",
+    "count": 1
+  }
+}

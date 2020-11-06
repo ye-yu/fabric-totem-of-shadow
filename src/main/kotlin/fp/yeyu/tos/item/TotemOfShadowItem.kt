@@ -12,7 +12,7 @@ import net.minecraft.util.Rarity
 import org.apache.logging.log4j.LogManager
 
 class TotemOfShadowItem : Item(Settings()
-        .rarity(Rarity.EPIC)
+        .rarity(Rarity.RARE)
         .group(ItemGroup.MISC)
         .maxCount(1)
 ) {

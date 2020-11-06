@@ -17,7 +17,9 @@ import net.minecraft.entity.SpawnGroup
 import net.minecraft.entity.mob.PathAwareEntity
 import net.minecraft.item.Item
 import net.minecraft.util.Identifier
+import net.minecraft.util.Rarity
 import net.minecraft.util.registry.Registry
+import net.minecraft.world.biome.Biome
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
@@ -25,6 +27,7 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
 
     const val NAMESPACE = "totemofshadow"
     private val totemOfShadowId = Identifier(NAMESPACE, "totem_of_shadow")
+    private val spiritEssenceId = Identifier(NAMESPACE, "spirit_essence")
     private val shadowEntityId = Identifier(NAMESPACE, "shadow_entity")
     private val spiritEntityId = Identifier(NAMESPACE, "spirit_entity")
     private val logger: Logger = LogManager.getLogger()
@@ -32,9 +35,11 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
     val spiritEntity by lazy(TotemOfShadowEntry::registerSpiritEntity)
     val shadowEntity by lazy(TotemOfShadowEntry::registerShadowEntity)
     private val totemOfShadow: Item = TotemOfShadowItem()
+    private val spiritEssence: Item = Item(Item.Settings().fireproof().maxCount(16).rarity(Rarity.UNCOMMON))
 
     override fun onInitialize() {
         Registry.register(Registry.ITEM, totemOfShadowId, totemOfShadow)
+        Registry.register(Registry.ITEM, spiritEssenceId, spiritEssence)
         logger.info("Registered ${spiritEntity.name}")
         logger.info("Registered ${shadowEntity.name}")
     }

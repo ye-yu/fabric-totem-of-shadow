@@ -1,3 +1,6 @@
 {
-  "item.totemofshadow.totem_of_shadow": "Totem of Shadow"
+  "item.totemofshadow.totem_of_shadow": "Totem of Shadow",
+  "item.totemofshadow.spirit_essence": "Spirit Essence",
+  "entity.totemofshadow.shadow_entity": "Shadow Entity",
+  "entity.totemofshadow.spirit_entity": "Spirit Entity"
 }
