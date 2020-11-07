@@ -10,20 +10,23 @@ import io.github.yeyu.easing.player.ReversingFramefulEasePlayer
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.entity.*
+import net.minecraft.entity.ai.control.LookControl
+import net.minecraft.entity.ai.control.MoveControl
+import net.minecraft.entity.ai.goal.Goal
+import net.minecraft.entity.ai.goal.LookAroundGoal
+import net.minecraft.entity.attribute.DefaultAttributeContainer
+import net.minecraft.entity.attribute.EntityAttributes
 import net.minecraft.entity.damage.DamageSource
-import net.minecraft.entity.mob.MobEntity
+import net.minecraft.entity.mob.FlyingEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.item.Items
-import net.minecraft.nbt.CompoundTag
 import net.minecraft.particle.ParticleTypes
-import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.Arm
 import net.minecraft.util.collection.DefaultedList
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.hit.HitResult
-import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import net.minecraft.util.math.Vec3d
 import net.minecraft.world.GameRules
@@ -32,24 +35,21 @@ import net.minecraft.world.World
 import java.util.*
 import kotlin.random.asKotlinRandom
 
-class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : MobEntity(entityType, world) {
+class SpiritEntity(entityType: EntityType<out FlyingEntity>?, world: World?) : FlyingEntity(entityType, world) {
     private val posPlayer = ReversingFramefulEasePlayer(
-            EaseInOutImpl(0.0,
-                    Y_MODIFIER_FACTOR,
+            EaseInOutImpl(-0.005,
+                    0.005,
                     InverseQuadratic,
                     QuadraticFunction,
                     DoubleToDoubleInterpolator
             ),
             30)
     private var particleTick = 5
-    private var trackingTick = 5
-    private var actualPosition = Vec3d.ZERO
-    private var configuredActualPosition = false
 
-    private var tracking: Entity? = null
     private var showSelf = false
     private var showHead = false
     var closestPlayer: PlayerEntity? = null
+    var lookingAtEntity: Entity? = null
     private val animationFrames = 35
     val selfAlphaLevelPlayer = PersistentFramefulEasePlayer(
             EaseInImpl(1.0, 0.0, QuadraticFunction, DoubleToDoubleInterpolator),
@@ -61,16 +61,15 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
             animationFrames
     )
 
-    private val movementPlayer = mutableMapOf<String, PersistentFramefulEasePlayer<Double>>()
-    private var movementTick = 30
-    private val movementTickDefault = 300
-    private val movementDistance = 6.0
-    private val movementSpeed = 200
-    private var movedTick = 0
-    private var isMoving = false
-
     override fun canImmediatelyDespawn(distanceSquared: Double): Boolean {
         return false
+    }
+
+    override fun initGoals() {
+        super.initGoals()
+        this.goalSelector.add(1, SpiritLookAtPlayerGoal(this))
+        this.goalSelector.add(2, SpiritLookAroundGoal(this))
+        this.goalSelector.add(3, SpiritFlyRandomlyGoal(this))
     }
 
     override fun tick() {
@@ -83,14 +82,10 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
         }
     }
 
-    private fun updateTracking() {
-        val trackNew = tracking.let { it == null || it.distanceTo(this) > MAX_DISTANCE_TO_TRACK_NEW }
-        if (trackNew) findNewPlayerToTrack()
-    }
+    private fun hasPlayerAround(): Boolean = closestPlayer != null
 
-    private fun findNewPlayerToTrack() {
-        tracking = world.getClosestPlayer(this, MAX_DISTANCE_TO_TRACK_NEW.toDouble())
-    }
+    private fun isLookingAtSomeEntity(): Boolean =
+            closestPlayer.let { it != null && squaredDistanceTo(it) < 81 } || lookingAtEntity.let { it != null && squaredDistanceTo(it) < 81 }
 
     @Environment(EnvType.CLIENT)
     override fun handleStatus(status: Byte) {
@@ -124,142 +119,23 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
             }
         }
         world.profiler.pop()
-
-        if (world !is ServerWorld) return tickClientMovement()
-
-        if (isMoving) {
-            world.profiler.push("spirit_movement")
-            val x = movementPlayer["x"]?.next() ?: pos.x
-            val y = (movementPlayer["y"]?.next() ?: pos.y) + posPlayer.next()
-            val z = movementPlayer["z"]?.next() ?: pos.z
-            updatePosition(x, y, z)
-            updateActualPosition(x, y, z)
-            isMoving = ++movedTick < movementSpeed
-            if (movedTick % 5 == 0) {
-                findNewPlayerToTrack()
-            }
-
-            val tracking = this.closestPlayer ?: return world.profiler.pop()
-
-            world.profiler.swap("spirit_look_at")
-            val packet = EntityLookAtS2CPacket.makePacket(this, tracking.pos.x, tracking.eyeY, tracking.pos.z)
-            (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, packet)
-            world.profiler.pop()
-        } else {
-            movementTick = if (tracking == null) --movementTick % movementTickDefault else movementTick
-            if (movementTick == 0) {
-                world.profiler.push("spirit_new_movement_calculation")
-                var x: Double = pos.x
-                var y: Double = pos.y
-                var z: Double = pos.z
-                var found = false
-                for (i in 0 until 5) {
-                    x = pos.x + random.asKotlinRandom().nextDouble(-movementDistance, movementDistance)
-                    y = getRandomY()
-                    z = pos.z + random.asKotlinRandom().nextDouble(-movementDistance, movementDistance)
-                    if (rayCastTo(x, y, z).type == HitResult.Type.MISS) {
-                        found = true
-                        break
-                    }
-                }
-
-                world.profiler.pop()
-
-                if (found) moveTo(x, y, z)
-                else tickIdle()
-            } else tickIdle()
-        }
-    }
-
-    private fun tickClientMovement() {
         tickTransparency()
-        if (!isMoving) {
-            val x = trackedPosition.x
-            val y = actualPosition.y + posPlayer.next()
-            val z = trackedPosition.z
-            updatePosition(x, y, z)
-            updateActualPosition(x, actualPosition.y, z)
-        } else {
-            val x = movementPlayer["x"]?.next() ?: trackedPosition.x
-            val y = (movementPlayer["y"]?.next() ?: trackedPosition.y) + posPlayer.next()
-            val z = movementPlayer["z"]?.next() ?: trackedPosition.z
-            updatePosition(x, y, z)
-            updateActualPosition(x, y, z)
-            isMoving = ++movedTick < movementSpeed
-        }
-    }
-
-    fun moveTo(x: Double, y: Double, z: Double) {
-        movementTick = movementTickDefault
-        isMoving = true
-        setMovementAnimation("x", pos.x, x)
-        setMovementAnimation("y", pos.y, y)
-        setMovementAnimation("z", pos.z, z)
-        movedTick = 0
-        if (world.isClient) return
-        LOGGER.info("Moving to: $x $y $z")
-        val headingToPacket = SpiritEntityHeadingToS2CPacket.makePacket(this, x, y, z)
-        (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, headingToPacket)
-    }
-
-    private fun setMovementAnimation(coordinate: String, from: Double, to: Double) {
-        val player = movementPlayer[coordinate] ?: return run {
-            movementPlayer[coordinate] = PersistentFramefulEasePlayer(
-                    EaseInOutImpl(from, to, InverseQuadratic, QuadraticFunction, DoubleToDoubleInterpolator),
-                    movementSpeed
-            )
-        }
-        player.transitionTo = to
+        tickIdle()
     }
 
     private fun rayCastTo(x: Double, y: Double, z: Double): BlockHitResult {
         return world.raycast(RaycastContext(pos, Vec3d(x, y, z), RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.ANY, this))
     }
 
-    private fun getRandomY(): Double {
-        val mutableBlockPos = blockPos.mutableCopy()
-        for (i in 0 until 6) {
-            if (!world.getBlockState(mutableBlockPos.downMutable()).isAir || mutableBlockPos.y == 0) break
-        }
-        val minY = mutableBlockPos.y + 1
-        mutableBlockPos.y = blockPos.y
-
-        for (i in 0 until 6) {
-            if (!world.getBlockState(mutableBlockPos.upMutable()).isAir || mutableBlockPos.y == 0) break
-        }
-        val maxY = mutableBlockPos.y - 1
-        return if (minY == maxY) pos.y
-        else random.asKotlinRandom().nextDouble(minY.toDouble(), maxY.toDouble())
-    }
-
     private fun tickIdle() {
         world.profiler.push("spirit_hover")
-
-        if (!configuredActualPosition) updateActualPosition(pos.x, pos.y, pos.z)
-
-        val x = pos.x
-        val y = actualPosition.y + posPlayer.next()
-        val z = pos.z
-
-        trackingTick = --trackingTick % TRACKING_TICK_DEF
-        if (trackingTick == 0) updateTracking()
-
-        updatePosition(x, y, z)
-        updateActualPosition(x, actualPosition.y, z)
-        findNewPlayerToTrack()
-
-        val tracking = this.tracking ?: getNonPlayerEntity() ?: return world.profiler.pop()
-        world.profiler.swap("spirit_look")
-        val packet = EntityLookAtS2CPacket.makePacket(this, tracking.pos.x, tracking.eyeY, tracking.pos.z)
-        (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, packet)
-        world.profiler.pop()
+        addVelocity(0.0, posPlayer.next(), 0.0)
+        return world.profiler.pop()
     }
-
-    private fun getNonPlayerEntity(): Entity? = world.getEntitiesByClass(LivingEntity::class.java, Box(blockPos).expand(10.0)) { true }.getOrNull(0)
 
     private fun tickTransparency() {
         world.profiler.push("spirit_transparency")
-        closestPlayer = world.getClosestPlayer(this, 6.0)
+        lookForClosestPlayer()
         val closestIsNull = closestPlayer == null
         if (closestIsNull != showSelf) {
             showSelf = closestIsNull
@@ -280,47 +156,12 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
         world.profiler.pop()
     }
 
-    override fun lookAtEntity(targetEntity: Entity, maxYawChange: Float, maxPitchChange: Float) {
-        super.lookAtEntity(targetEntity, maxYawChange, maxPitchChange)
-        headYaw = yaw
-    }
-
     override fun isFallFlying(): Boolean = false
 
-    override fun readCustomDataFromTag(tag: CompoundTag) {
-        super.readCustomDataFromTag(tag)
-        if (tag.contains("actualPosition")) {
-            val actualPosition = tag.getCompound("actualPosition")
-            val x = actualPosition.getDouble("x")
-            val y = actualPosition.getDouble("y")
-            val z = actualPosition.getDouble("z")
-            setPos(x, y, z)
-            updateActualPosition(x, y, z)
-        }
-    }
-
-    private fun updateActualPosition(x: Double, y: Double, z: Double) {
-        actualPosition = Vec3d(x, y, z)
-        configuredActualPosition = true
-    }
-
-    override fun writeCustomDataToTag(tag: CompoundTag) {
-        super.writeCustomDataToTag(tag)
-        val pos = if (!configuredActualPosition) pos else actualPosition
-        val compoundTag = CompoundTag()
-        compoundTag.putDouble("x", pos.x)
-        compoundTag.putDouble("y", pos.y)
-        compoundTag.putDouble("z", pos.z)
-        tag.put("actualPosition", compoundTag)
-    }
-
-    override fun tryEquip(equipment: ItemStack): Boolean {
-        return true
-    }
+    override fun tryEquip(equipment: ItemStack): Boolean = true
 
     override fun damage(source: DamageSource, amount: Float): Boolean {
-        val attacker = source.attacker ?: return super.damage(source, amount)
-        attacker.damage(DamageSource.mob(this), amount)
+        source.attacker?.damage(DamageSource.mob(this), amount)
         return super.damage(source, amount)
     }
 
@@ -333,34 +174,136 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
     }
 
     override fun equipStack(slot: EquipmentSlot, stack: ItemStack) {}
+
     override fun getMainArm(): Arm {
         return Arm.RIGHT
     }
 
+    private fun lookForClosestPlayer() {
+        closestPlayer = world.getClosestPlayer(this, 6.0)
+    }
+
+    private fun lookForAnyEntity() {
+        lookingAtEntity = world.getNonSpectatingEntities(LivingEntity::class.java, Box(blockPos).expand(11.0)).getOrNull(1)
+    }
+
+    override fun getLookPitchSpeed(): Int = 360
+    override fun getLookYawSpeed(): Int = 360
+
     companion object {
         private val DEF = DefaultedList.ofSize(1, ItemStack.EMPTY)
-        private const val Y_MODIFIER_FACTOR = 0.5
-        private const val MAX_DISTANCE_TO_TRACK_NEW = 11f
         private const val PARTICLE_TICK_DEF = 120
         private const val PARTICLE_TICK_DEF_OFFSET = 10
         private const val PARTICLE_LOWER_OFFSET = -1.5
         private const val PARTICLE_UPPER_OFFSET = 2.5
         private const val PARTICLE_OFFSET_RANGE = PARTICLE_UPPER_OFFSET - PARTICLE_LOWER_OFFSET
-        private const val TRACKING_TICK_DEF = 15
+
+        fun createMobAttributes(): DefaultAttributeContainer.Builder {
+            return createLivingAttributes()
+                    .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.2)
+                    .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 16.0)
+                    .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK)
+        }
     }
 
     init {
+        this.moveControl = SpiritMoveControl(this)
+        this.lookControl = SpiritLookControl(this)
         setCanPickUpLoot(true)
     }
 
-    private fun BlockPos.Mutable.downMutable(): BlockPos {
-        this.y = this.y - 1
-        return this
+    class SpiritFlyRandomlyGoal(private val spiritEntity: SpiritEntity) : Goal() {
+        override fun canStart(): Boolean {
+            if (spiritEntity.hasPlayerAround()) return false
+            val moveControl = spiritEntity.getMoveControl() as SpiritMoveControl
+            return moveControl.movementTick > 200 || moveControl.movementTick == 0
+        }
+
+        override fun shouldContinue(): Boolean = false
+
+        override fun canStop(): Boolean = true
+
+        override fun start() {
+            (spiritEntity.moveControl as SpiritMoveControl).moveToRandomTarget()
+        }
+
+        init {
+            controls = EnumSet.of(Control.MOVE)
+        }
     }
 
-    private fun BlockPos.Mutable.upMutable(): BlockPos {
-        this.y = this.y + 1
-        return this
+    class SpiritLookAtPlayerGoal(private val spiritEntity: SpiritEntity) : Goal() {
+
+        override fun canStart(): Boolean {
+            spiritEntity.lookForClosestPlayer()
+            return !spiritEntity.getMoveControl().isMoving && hasPlayerAround()
+        }
+
+        private fun hasPlayerAround(): Boolean = spiritEntity.hasPlayerAround()
+
+        override fun tick() {
+            val lookingAt = spiritEntity.closestPlayer ?: return
+            spiritEntity.lookControl.lookAt(lookingAt, 360f, 360f)
+        }
+    }
+
+    class SpiritLookAroundGoal(private val spiritEntity: SpiritEntity) : LookAroundGoal(spiritEntity) {
+        override fun canStart(): Boolean = !spiritEntity.getMoveControl().isMoving && !spiritEntity.hasPlayerAround() && super.canStart() && spiritEntity.random.nextDouble() < 0.3
+        override fun shouldContinue(): Boolean = if (spiritEntity.isLookingAtSomeEntity()) false else super.shouldContinue()
+        override fun canStop(): Boolean = spiritEntity.hasPlayerAround()
+
+        override fun start() {
+            spiritEntity.lookForAnyEntity()
+            super.start()
+        }
+
+        override fun tick() {
+            if (!spiritEntity.isLookingAtSomeEntity() || spiritEntity.lookingAtEntity == null) return super.tick()
+            spiritEntity.lookControl.lookAt(spiritEntity.lookingAtEntity, 360f, 360f)
+            spiritEntity.headYaw = spiritEntity.yaw
+        }
+    }
+
+    class SpiritMoveControl(private val spiritEntity: SpiritEntity) : MoveControl(spiritEntity) {
+
+        var movementTick: Int = 0
+
+        override fun tick() {
+            movementTick++
+
+            if (state == State.MOVE_TO || state == State.JUMPING) {
+                state = State.MOVE_TO
+                super.tick()
+                return
+            }
+        }
+
+        fun moveToRandomTarget() {
+            val movementRadius = 6.0
+            val random = spiritEntity.random.asKotlinRandom()
+            val x = spiritEntity.pos.x + random.nextDouble(-movementRadius, movementRadius)
+            val y = spiritEntity.pos.y + random.nextDouble(-movementRadius, movementRadius)
+            val z = spiritEntity.pos.z + random.nextDouble(-movementRadius, movementRadius)
+            if (spiritEntity.rayCastTo(x, y, z).type != HitResult.Type.MISS) return
+            moveTo(x, y, z, 1.0)
+        }
+
+        override fun moveTo(x: Double, y: Double, z: Double, speed: Double) {
+            super.moveTo(x, y, z, speed)
+            movementTick = 0
+        }
+    }
+
+    class SpiritLookControl(spiritEntity: SpiritEntity) : LookControl(spiritEntity) {
+        override fun tick() {
+            yawSpeed = 360f
+            pitchSpeed = 360f
+            if (active) {
+                active = false
+                entity.headYaw = changeAngle(entity.headYaw, this.targetYaw, 360f)
+                entity.pitch = changeAngle(entity.pitch, this.targetPitch, 360f)
+            }
+        }
     }
 }
 

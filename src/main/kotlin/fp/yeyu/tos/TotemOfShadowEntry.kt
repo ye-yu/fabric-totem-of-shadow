@@ -83,6 +83,6 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
                     .create(SpawnGroup.MONSTER, ::ShadowEntity)
                     .dimensions(EntityDimensions.fixed(.6f, 1.8f)).build()
     ).apply {
-        FabricDefaultAttributeRegistry.register(this, PathAwareEntity.createMobAttributes())
+        FabricDefaultAttributeRegistry.register(this, SpiritEntity.createMobAttributes())
     }
 }
