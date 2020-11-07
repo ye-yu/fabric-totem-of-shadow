@@ -11,6 +11,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.NetworkThreadUtils;
 import net.minecraft.network.packet.s2c.play.MobSpawnS2CPacket;
+import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,6 +36,7 @@ public class ClientPlayerNetworkHandlerMixin {
     @Environment(EnvType.CLIENT)
     @Inject(method = "onMobSpawn", at = @At("HEAD"), cancellable = true)
     private void onMobSpawnEntity(MobSpawnS2CPacket p, CallbackInfo callbackInfo) {
+        LOGGER.info("Spawning {} at {} {} {}", Registry.ENTITY_TYPE.get(p.getEntityTypeId()).getName(), (int) p.getX(), (int) p.getY(), (int) p.getZ());
         if (!(p instanceof ShadowEntityMobSpawnS2CPacket)) return;
         ShadowEntityMobSpawnS2CPacket packet = (ShadowEntityMobSpawnS2CPacket) p;
         NetworkThreadUtils.forceMainThread(packet, (ClientPlayNetworkHandler) (Object) this, client);

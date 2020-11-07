@@ -17,9 +17,6 @@ import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.item.Items
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket
-import net.minecraft.network.packet.s2c.play.EntityS2CPacket
-import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket
 import net.minecraft.particle.ParticleTypes
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.Arm
@@ -127,24 +124,36 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
             }
         }
         world.profiler.pop()
-        if (world.isClient) return tickIdle()
+
+        if (world !is ServerWorld) return tickClientMovement()
+
         if (isMoving) {
+            world.profiler.push("spirit_movement")
             val x = movementPlayer["x"]?.next() ?: pos.x
             val y = (movementPlayer["y"]?.next() ?: pos.y) + posPlayer.next()
             val z = movementPlayer["z"]?.next() ?: pos.z
             updatePosition(x, y, z)
             updateActualPosition(x, y, z)
             isMoving = ++movedTick < movementSpeed
-            (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, EntityPositionS2CPacket(this))
+            if (movedTick % 5 == 0) {
+                findNewPlayerToTrack()
+            }
+
+            val tracking = this.closestPlayer ?: return world.profiler.pop()
+
+            world.profiler.swap("spirit_look_at")
+            val packet = EntityLookAtS2CPacket.makePacket(this, tracking.pos.x, tracking.eyeY, tracking.pos.z)
+            (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, packet)
+            world.profiler.pop()
         } else {
             movementTick = if (tracking == null) --movementTick % movementTickDefault else movementTick
             if (movementTick == 0) {
-                movementTick = movementTickDefault
+                world.profiler.push("spirit_new_movement_calculation")
                 var x: Double = pos.x
                 var y: Double = pos.y
                 var z: Double = pos.z
                 var found = false
-                for(i in 0 until 5) {
+                for (i in 0 until 5) {
                     x = pos.x + random.asKotlinRandom().nextDouble(-movementDistance, movementDistance)
                     y = getRandomY()
                     z = pos.z + random.asKotlinRandom().nextDouble(-movementDistance, movementDistance)
@@ -154,20 +163,43 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
                     }
                 }
 
+                world.profiler.pop()
+
                 if (found) moveTo(x, y, z)
                 else tickIdle()
             } else tickIdle()
         }
     }
 
-    private fun moveTo(x: Double, y: Double, z: Double) {
+    private fun tickClientMovement() {
+        tickTransparency()
+        if (!isMoving) {
+            val x = trackedPosition.x
+            val y = actualPosition.y + posPlayer.next()
+            val z = trackedPosition.z
+            updatePosition(x, y, z)
+            updateActualPosition(x, actualPosition.y, z)
+        } else {
+            val x = movementPlayer["x"]?.next() ?: trackedPosition.x
+            val y = (movementPlayer["y"]?.next() ?: trackedPosition.y) + posPlayer.next()
+            val z = movementPlayer["z"]?.next() ?: trackedPosition.z
+            updatePosition(x, y, z)
+            updateActualPosition(x, y, z)
+            isMoving = ++movedTick < movementSpeed
+        }
+    }
+
+    fun moveTo(x: Double, y: Double, z: Double) {
+        movementTick = movementTickDefault
         isMoving = true
         setMovementAnimation("x", pos.x, x)
         setMovementAnimation("y", pos.y, y)
         setMovementAnimation("z", pos.z, z)
-        LOGGER.info("Moving from ${pos.x.toInt()} ${pos.y.toInt()} ${pos.z.toInt()} to ${x.toInt()} ${y.toInt()} ${z.toInt()}")
-        LOGGER.info("Moving tick: $movementTick isMoving? $isMoving")
         movedTick = 0
+        if (world.isClient) return
+        LOGGER.info("Moving to: $x $y $z")
+        val headingToPacket = SpiritEntityHeadingToS2CPacket.makePacket(this, x, y, z)
+        (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, headingToPacket)
     }
 
     private fun setMovementAnimation(coordinate: String, from: Double, to: Double) {
@@ -186,13 +218,13 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
 
     private fun getRandomY(): Double {
         val mutableBlockPos = blockPos.mutableCopy()
-        for(i in 0 until 6) {
+        for (i in 0 until 6) {
             if (!world.getBlockState(mutableBlockPos.downMutable()).isAir || mutableBlockPos.y == 0) break
         }
         val minY = mutableBlockPos.y + 1
         mutableBlockPos.y = blockPos.y
 
-        for(i in 0 until 6) {
+        for (i in 0 until 6) {
             if (!world.getBlockState(mutableBlockPos.upMutable()).isAir || mutableBlockPos.y == 0) break
         }
         val maxY = mutableBlockPos.y - 1
@@ -201,27 +233,32 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
     }
 
     private fun tickIdle() {
-        world.profiler.push("spirit_transparency")
-        tickTransparency()
-        world.profiler.swap("spirit_hover")
+        world.profiler.push("spirit_hover")
+
         if (!configuredActualPosition) updateActualPosition(pos.x, pos.y, pos.z)
+
         val x = pos.x
         val y = actualPosition.y + posPlayer.next()
         val z = pos.z
+
         trackingTick = --trackingTick % TRACKING_TICK_DEF
         if (trackingTick == 0) updateTracking()
+
         updatePosition(x, y, z)
         updateActualPosition(x, actualPosition.y, z)
-        world.profiler.pop()
-        val tracking = this.tracking ?: getNonPlayerEntity() ?: return
-        world.profiler.push("spirit_look")
-        lookAtEntity(tracking, 360f, 360f)
+        findNewPlayerToTrack()
+
+        val tracking = this.tracking ?: getNonPlayerEntity() ?: return world.profiler.pop()
+        world.profiler.swap("spirit_look")
+        val packet = EntityLookAtS2CPacket.makePacket(this, tracking.pos.x, tracking.eyeY, tracking.pos.z)
+        (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, packet)
         world.profiler.pop()
     }
 
     private fun getNonPlayerEntity(): Entity? = world.getEntitiesByClass(LivingEntity::class.java, Box(blockPos).expand(10.0)) { true }.getOrNull(0)
 
     private fun tickTransparency() {
+        world.profiler.push("spirit_transparency")
         closestPlayer = world.getClosestPlayer(this, 6.0)
         val closestIsNull = closestPlayer == null
         if (closestIsNull != showSelf) {
@@ -240,6 +277,7 @@ class SpiritEntity(entityType: EntityType<out MobEntity?>?, world: World?) : Mob
         if (showHead && random.nextDouble() < 0.05) {
             headAlphaLevelPlayer.transitionTo = if (random.nextBoolean()) 0.65 else 0.75
         }
+        world.profiler.pop()
     }
 
     override fun lookAtEntity(targetEntity: Entity, maxYawChange: Float, maxPitchChange: Float) {
