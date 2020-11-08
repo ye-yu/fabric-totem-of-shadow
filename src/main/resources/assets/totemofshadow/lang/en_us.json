@@ -7,5 +7,6 @@
   "entity.totemofshadow.spirit_entity": "Spirit",
   "item.minecraft.potion.effect.tos_health_boost_potion": "Potion of Life",
   "item.minecraft.potion.effect.tos_health_boost_ii_potion": "Potion of Life II",
-  "subtitles.totemofshadow.entity.spirit_entity_ambient": "Spirit grieved"
+  "subtitles.totemofshadow.entity.spirit_entity_ambient": "Spirit grieved",
+  "subtitles.totemofshadow.entity.shadow_entity_spawned": "Shadow spawned"
 }

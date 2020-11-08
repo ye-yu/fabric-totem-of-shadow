@@ -4,5 +4,11 @@
     "sounds": [
       "totemofshadow:spirit_entity_ambient"
     ]
+  },
+  "shadow_entity_spawned": {
+    "subtitle": "subtitles.totemofshadow.entity.shadow_entity_spawned",
+    "sounds": [
+      "totemofshadow:shadow_entity_spawned"
+    ]
   }
 }

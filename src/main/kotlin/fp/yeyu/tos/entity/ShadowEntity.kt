@@ -1,5 +1,6 @@
 package fp.yeyu.tos.entity
 
+import fp.yeyu.tos.TotemOfShadowEntry
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
@@ -22,6 +23,7 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.Packet
 import net.minecraft.particle.ParticleTypes
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.sound.SoundCategory
 import net.minecraft.text.LiteralText
 import net.minecraft.util.Arm
 import net.minecraft.util.Identifier
@@ -208,7 +210,17 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
                     )
                 }
             }
-        } else world.sendEntityStatus(this, 81.toByte())
+        } else {
+            world.sendEntityStatus(this, 81.toByte())
+            world.playSoundFromEntity(
+                    null,
+                    this,
+                    TotemOfShadowEntry.shadowEntitySpawnedSound,
+                    SoundCategory.HOSTILE,
+                    soundVolume,
+                    soundPitch
+            )
+        }
     }
 
     private class ShadowRunGoal(mob: ShadowEntity) : EscapeDangerGoal(mob, 0.75) {

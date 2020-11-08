@@ -49,6 +49,8 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
     // sound events
     private val spiritEntityAmbientId = Identifier(NAMESPACE, "spirit_entity_ambient")
     internal val spiritEntityAmbientSound = SoundEvent(spiritEntityAmbientId)
+    private val shadowEntitySpawnedId = Identifier(NAMESPACE, "shadow_entity_spawned")
+    internal val shadowEntitySpawnedSound = SoundEvent(shadowEntitySpawnedId)
 
     override fun onInitialize() {
         Registry.register(Registry.ITEM, totemOfShadowId, totemOfShadow)
@@ -65,6 +67,7 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
         logger.info("Registered potion recipes")
 
         Registry.register(Registry.SOUND_EVENT, spiritEntityAmbientId, spiritEntityAmbientSound)
+        Registry.register(Registry.SOUND_EVENT, shadowEntitySpawnedId, shadowEntitySpawnedSound)
         logger.info("Registered sound events")
     }
 
@@ -82,7 +85,7 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
                     .create(SpawnGroup.MONSTER, ::SpiritEntity)
                     .dimensions(EntityDimensions.fixed(.45f, .45f)).build()
     ).apply {
-        FabricDefaultAttributeRegistry.register(this, PathAwareEntity.createMobAttributes())
+        FabricDefaultAttributeRegistry.register(this, SpiritEntity.createMobAttributes())
     }
 
     private fun registerShadowEntity(): EntityType<ShadowEntity> = Registry.register(
@@ -92,6 +95,6 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
                     .create(SpawnGroup.MONSTER, ::ShadowEntity)
                     .dimensions(EntityDimensions.fixed(.6f, 1.8f)).build()
     ).apply {
-        FabricDefaultAttributeRegistry.register(this, SpiritEntity.createMobAttributes())
+        FabricDefaultAttributeRegistry.register(this, PathAwareEntity.createMobAttributes())
     }
 }

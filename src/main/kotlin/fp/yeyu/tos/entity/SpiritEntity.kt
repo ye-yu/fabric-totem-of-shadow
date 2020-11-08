@@ -206,7 +206,7 @@ class SpiritEntity(entityType: EntityType<out FlyingEntity>?, world: World?) : F
 
         fun createMobAttributes(): DefaultAttributeContainer.Builder {
             return createLivingAttributes()
-                    .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.1)
+                    .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.5)
                     .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 16.0)
                     .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK)
         }
