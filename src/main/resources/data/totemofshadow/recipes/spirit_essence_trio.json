@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "totemofshadow:spirit_essence"
+    },
+    {
+      "item": "totemofshadow:spirit_essence"
+    },
+    {
+      "item": "totemofshadow:spirit_essence"
+    }
+  ],
+  "result": {
+    "item": "totemofshadow:spirit_essence_trio",
+    "count": 1
+  }
+}
