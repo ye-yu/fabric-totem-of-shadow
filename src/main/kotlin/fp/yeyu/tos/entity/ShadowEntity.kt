@@ -10,9 +10,13 @@ import net.minecraft.client.network.PlayerListEntry
 import net.minecraft.client.render.entity.PlayerModelPart
 import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.world.ClientWorld
+import net.minecraft.enchantment.Enchantment
+import net.minecraft.enchantment.ProtectionEnchantment
+import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.EquipmentSlot
 import net.minecraft.entity.ai.goal.EscapeDangerGoal
+import net.minecraft.entity.damage.DamageSource
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.entity.mob.MobEntity
@@ -45,6 +49,7 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
     private val updateMobCallingTickDefault = 60
 
     private var updateMobCallingTick = 5
+    private var fireProtectionLevel = 0
 
     companion object {
         private val TRACKED_COPYING_UUID = DataTracker.registerData(ShadowEntity::class.java, TrackedDataHandlerRegistry.OPTIONAL_UUID)
@@ -148,6 +153,7 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
         val uuid = copyingEntity?.uuid ?: copyingUuid ?: badUuid
         tag.putUuid("copyingUuid", uuid)
         tag.putString("copyingName", copyingEntity?.entityName ?: entityName)
+        tag.putInt("fireProtectionLevel", fireProtectionLevel)
     }
 
     override fun readCustomDataFromTag(tag: CompoundTag) {
@@ -162,6 +168,10 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
         if (tag.contains("copyingName")) {
             val copyingName = tag.getString("copyingName")
             setCustomName(copyingName)
+        }
+
+        if (tag.contains("fireProtectionLevel")) {
+            fireProtectionLevel = tag.getInt("fireProtectionLevel")
         }
     }
 
@@ -221,6 +231,26 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
                     soundPitch
             )
         }
+    }
+
+    fun setAttributeFromEnchantment(enchantment: Enchantment, level: Int) {
+        when(enchantment) {
+            is ProtectionEnchantment -> {
+                if (enchantment.protectionType != ProtectionEnchantment.Type.FIRE) return
+                fireProtectionLevel = level + 1
+            }
+            else -> return
+        }
+    }
+
+    override fun damage(source: DamageSource, amount: Float): Boolean {
+        damageByFire(source.attacker)
+        return super.damage(source, amount)
+    }
+
+    private fun damageByFire(attacker: Entity?) {
+        val attackerEntity = attacker ?: return
+        attackerEntity.setOnFireFor(4 * fireProtectionLevel)
     }
 
     private class ShadowRunGoal(mob: ShadowEntity) : EscapeDangerGoal(mob, 0.75) {

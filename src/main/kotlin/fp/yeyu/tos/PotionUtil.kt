@@ -11,8 +11,9 @@ import net.minecraft.util.Identifier
 import net.minecraft.util.registry.Registry
 
 object PotionUtil {
-    private val healthBoostIPotion = Potion("tos_health_boost_potion", StatusEffectInstance(StatusEffects.HEALTH_BOOST, 3600, 1))
-    private val healthBoostIIPotion = Potion("tos_health_boost_ii_potion", StatusEffectInstance(StatusEffects.HEALTH_BOOST, 4800, 3))
+    private val quickRegeneration = StatusEffectInstance(StatusEffects.REGENERATION, 20, 50)
+    private val healthBoostIPotion = Potion("tos_health_boost_potion", StatusEffectInstance(StatusEffects.HEALTH_BOOST, 3600, 1), quickRegeneration)
+    private val healthBoostIIPotion = Potion("tos_health_boost_ii_potion", StatusEffectInstance(StatusEffects.HEALTH_BOOST, 4800, 3), quickRegeneration)
     private val healthBoostIPotionRecipe = BrewingRecipeRegistry.Recipe(Potions.MUNDANE, Ingredient.ofItems(TotemOfShadowEntry.spiritEssence), healthBoostIPotion)
     private val healthBoostIIPotionRecipe = BrewingRecipeRegistry.Recipe(Potions.MUNDANE, Ingredient.ofItems(TotemOfShadowEntry.spiritEssenceTrio), healthBoostIIPotion)
     private val healthBoostI_Id = Identifier(TotemOfShadowEntry.NAMESPACE, "tos_health_boost_potion")

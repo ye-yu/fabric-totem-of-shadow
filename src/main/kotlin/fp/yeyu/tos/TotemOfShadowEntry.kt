@@ -42,7 +42,7 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
     val spiritEntity by lazy(TotemOfShadowEntry::registerSpiritEntity)
     val shadowEntity by lazy(TotemOfShadowEntry::registerShadowEntity)
     private val spiritEntitySpawnEgg: Item by lazy { SpawnEggItem(spiritEntity, 0x014333d, 0x0bbf2b8, Item.Settings().group(ItemGroup.MISC)) }
-    private val totemOfShadow: Item = TotemOfShadowItem()
+    val totemOfShadow: Item = TotemOfShadowItem()
     internal val spiritEssence: Item = Item(Item.Settings().fireproof().maxCount(16).rarity(Rarity.UNCOMMON))
     internal val spiritEssenceTrio: Item = Item(Item.Settings().fireproof().maxCount(16).rarity(Rarity.UNCOMMON))
 

@@ -5,6 +5,7 @@
   "mixins": [
     "ClientPlayerNetworkHandlerMixin",
     "DefaultBiomeCreatorMixin",
+    "FireProtectionEnchantmentMixin",
     "LivingEntityRendererMixin"
   ],
   "client": [

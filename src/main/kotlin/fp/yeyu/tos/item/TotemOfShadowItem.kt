@@ -2,10 +2,12 @@ package fp.yeyu.tos.item
 
 import fp.yeyu.tos.TotemOfShadowEntry
 import fp.yeyu.tos.entity.ShadowEntity
+import net.minecraft.enchantment.EnchantmentHelper
 import net.minecraft.entity.SpawnReason
 import net.minecraft.item.Item
 import net.minecraft.item.ItemGroup
 import net.minecraft.item.ItemUsageContext
+import net.minecraft.nbt.ListTag
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Rarity
@@ -37,10 +39,14 @@ class TotemOfShadowItem : Item(Settings()
         shadowEntity.sendSpawnPacket(player.uuid)
         shadowEntity.copyingEntity = player
         shadowEntity.playSpawnParticles()
+        EnchantmentHelper.fromTag(context.stack.enchantments).forEach(shadowEntity::setAttributeFromEnchantment)
         return ActionResult.CONSUME
     }
 
     companion object {
         private val LOGGER = LogManager.getLogger()
     }
+
+    override fun getEnchantability(): Int = 1
+
 }
