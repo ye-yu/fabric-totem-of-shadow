@@ -21,6 +21,7 @@ import net.minecraft.entity.mob.PathAwareEntity
 import net.minecraft.item.Item
 import net.minecraft.item.ItemGroup
 import net.minecraft.item.SpawnEggItem
+import net.minecraft.sound.SoundEvent
 import net.minecraft.util.Identifier
 import net.minecraft.util.Rarity
 import net.minecraft.util.registry.Registry
@@ -45,10 +46,15 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
     internal val spiritEssence: Item = Item(Item.Settings().fireproof().maxCount(16).rarity(Rarity.UNCOMMON))
     internal val spiritEssenceTrio: Item = Item(Item.Settings().fireproof().maxCount(16).rarity(Rarity.UNCOMMON))
 
+    // sound events
+    private val spiritEntityAmbientId = Identifier(NAMESPACE, "spirit_entity_ambient")
+    internal val spiritEntityAmbientSound = SoundEvent(spiritEntityAmbientId)
+
     override fun onInitialize() {
         Registry.register(Registry.ITEM, totemOfShadowId, totemOfShadow)
         Registry.register(Registry.ITEM, spiritEssenceId, spiritEssence)
         Registry.register(Registry.ITEM, spiritEssenceTrioId, spiritEssenceTrio)
+        logger.info("Registered items")
 
         logger.info("Registered ${spiritEntity.name}")
         Registry.register(Registry.ITEM, spiritEntitySpawnEggId, spiritEntitySpawnEgg)
@@ -56,7 +62,10 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
         logger.info("Registered ${shadowEntity.name}")
 
         PotionUtil.addHealthBoostPotionAndRecipe()
+        logger.info("Registered potion recipes")
 
+        Registry.register(Registry.SOUND_EVENT, spiritEntityAmbientId, spiritEntityAmbientSound)
+        logger.info("Registered sound events")
     }
 
     override fun onInitializeClient() {

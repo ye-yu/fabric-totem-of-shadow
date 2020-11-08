@@ -1,5 +1,6 @@
 package fp.yeyu.tos.entity
 
+import fp.yeyu.tos.TotemOfShadowEntry
 import io.github.yeyu.easing.EaseInImpl
 import io.github.yeyu.easing.EaseInOutImpl
 import io.github.yeyu.easing.function.InverseQuadratic
@@ -23,6 +24,7 @@ import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.item.Items
 import net.minecraft.particle.ParticleTypes
+import net.minecraft.sound.SoundEvent
 import net.minecraft.util.Arm
 import net.minecraft.util.collection.DefaultedList
 import net.minecraft.util.hit.BlockHitResult
@@ -111,7 +113,7 @@ class SpiritEntity(entityType: EntityType<out FlyingEntity>?, world: World?) : F
         super.tickMovement()
         world.profiler.push("looting")
         if (!world.isClient && canPickUpLoot() && this.isAlive && !dead && world.gameRules.getBoolean(GameRules.DO_MOB_GRIEFING)) {
-            val list = world.getNonSpectatingEntities(ItemEntity::class.java, this.boundingBox.expand(1.0, 0.0, 1.0))
+            val list = world.getNonSpectatingEntities(ItemEntity::class.java, this.boundingBox.expand(2.0))
             for (itemEntity in list) {
                 if (!itemEntity.removed && !itemEntity.stack.isEmpty && !itemEntity.cannotPickup() && canGather(itemEntity.stack)) {
                     loot(itemEntity)
@@ -190,6 +192,10 @@ class SpiritEntity(entityType: EntityType<out FlyingEntity>?, world: World?) : F
     override fun getLookPitchSpeed(): Int = 360
     override fun getLookYawSpeed(): Int = 360
 
+    override fun getAmbientSound(): SoundEvent = TotemOfShadowEntry.spiritEntityAmbientSound
+
+    override fun getSoundPitch(): Float = 0.8f + random.nextFloat() * 0.4f
+
     companion object {
         private val DEF = DefaultedList.ofSize(1, ItemStack.EMPTY)
         private const val PARTICLE_TICK_DEF = 120
@@ -200,7 +206,7 @@ class SpiritEntity(entityType: EntityType<out FlyingEntity>?, world: World?) : F
 
         fun createMobAttributes(): DefaultAttributeContainer.Builder {
             return createLivingAttributes()
-                    .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.2)
+                    .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.1)
                     .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 16.0)
                     .add(EntityAttributes.GENERIC_ATTACK_KNOCKBACK)
         }

@@ -1,0 +1,8 @@
+{
+  "spirit_entity_ambient": {
+    "subtitle": "subtitles.totemofshadow.entity.spirit_entity_ambient",
+    "sounds": [
+      "totemofshadow:spirit_entity_ambient"
+    ]
+  }
+}
