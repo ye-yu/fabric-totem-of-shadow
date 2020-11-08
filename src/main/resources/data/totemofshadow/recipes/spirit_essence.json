@@ -1,20 +1,12 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "###",
-    "SSS",
-    " # "
-  ],
-  "key": {
-    "#": {
-      "tag": "wool"
-    },
-    "S": {
-      "item": "totemofshadow:spirit_essence"
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "totemofshadow:spirit_essence_trio"
     }
-  },
+  ],
   "result": {
-    "item": "totemofshadow:totem_of_shadow",
-    "count": 1
+    "item": "totemofshadow:spirit_essence",
+    "count": 3
   }
 }
