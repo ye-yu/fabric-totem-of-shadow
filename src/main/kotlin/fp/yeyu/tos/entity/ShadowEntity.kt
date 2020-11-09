@@ -1,13 +1,10 @@
 package fp.yeyu.tos.entity
 
 import fp.yeyu.tos.TotemOfShadowEntry
-import fp.yeyu.tos.enchanments.TotemCurseOfExplosion
-import fp.yeyu.tos.enchanments.TotemCurseOfFire
-import fp.yeyu.tos.enchanments.TotemCurseOfThorns
+import fp.yeyu.tos.enchanments.*
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.network.ClientPlayerEntity
 import net.minecraft.client.network.OtherClientPlayerEntity
 import net.minecraft.client.network.PlayerListEntry
@@ -15,8 +12,6 @@ import net.minecraft.client.render.entity.PlayerModelPart
 import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.enchantment.Enchantment
-import net.minecraft.enchantment.ProtectionEnchantment
-import net.minecraft.enchantment.ThornsEnchantment
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.EquipmentSlot
@@ -27,7 +22,6 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.entity.mob.MobEntity
 import net.minecraft.entity.mob.PathAwareEntity
 import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.BowItem
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.Packet
@@ -61,6 +55,8 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
     private var blastProtectionLevel = 0
     private var explosionCount: Int = 0
     private var thornsLevel: Int = 0
+    private var resistanceMultiplier: Int = 0
+    private var speedMultiplier: Int = 1
 
     companion object {
         private val TRACKED_COPYING_UUID = DataTracker.registerData(ShadowEntity::class.java, TrackedDataHandlerRegistry.OPTIONAL_UUID)
@@ -168,6 +164,8 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
         tag.putInt("blastProtectionLevel", blastProtectionLevel)
         tag.putInt("explosionCount", explosionCount)
         tag.putInt("thornsLevel", thornsLevel)
+        tag.putInt("resistanceMultiplier", resistanceMultiplier)
+        tag.putInt("speedMultiplier", speedMultiplier)
     }
 
     override fun readCustomDataFromTag(tag: CompoundTag) {
@@ -198,6 +196,15 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
 
         if (tag.contains("thornsLevel")) {
             thornsLevel = tag.getInt("thornsLevel")
+        }
+
+
+        if (tag.contains("resistanceMultiplier")) {
+            resistanceMultiplier = tag.getInt("resistanceMultiplier")
+        }
+
+        if (tag.contains("speedMultiplier")) {
+            speedMultiplier = tag.getInt("speedMultiplier")
         }
     }
 
@@ -262,18 +269,21 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
 
     fun setAttributeFromEnchantment(enchantment: Enchantment, level: Int) {
         when (enchantment) {
-            is TotemCurseOfFire -> fireProtectionLevel = level
-            is TotemCurseOfExplosion -> blastProtectionLevel = level
-            is TotemCurseOfThorns -> thornsLevel = level
+            TotemCurseOfFire -> fireProtectionLevel = level
+            TotemCurseOfExplosion -> blastProtectionLevel = level
+            TotemCurseOfThorns -> thornsLevel = level
+            TotemCurseOfResistance -> resistanceMultiplier = level
+            TotemCurseOfSpeed -> speedMultiplier = level
             else -> return
         }
     }
 
     override fun damage(source: DamageSource, amount: Float): Boolean {
-        if (!super.damage(source, amount)) return false
+        val correctedAmount = amount * (1 - 0.2f * resistanceMultiplier.coerceAtMost(4))
+        if (!super.damage(source, correctedAmount)) return false
         damageByFire(source.attacker)
         damageByExplosion()
-        damageByThorns(source.attacker, amount)
+        damageByThorns(source.attacker, correctedAmount)
         return true
     }
 
@@ -300,9 +310,14 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
         attackerEntity.setOnFireFor(3 * fireProtectionLevel)
     }
 
-    private class ShadowRunGoal(mob: ShadowEntity) : EscapeDangerGoal(mob, 0.75) {
+    private class ShadowRunGoal(val shadowEntity: ShadowEntity) : EscapeDangerGoal(shadowEntity, 0.4) {
         override fun canStart(): Boolean {
             return findTarget()
+        }
+
+        override fun start() {
+            shadowEntity.navigation.startMovingTo(targetX, targetY, targetZ, speed + 0.1 * shadowEntity.speedMultiplier)
+            active = true
         }
     }
 

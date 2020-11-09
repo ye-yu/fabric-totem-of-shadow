@@ -1,7 +1,7 @@
 package fp.yeyu.tos.mixins;
 
-import fp.yeyu.tos.TotemOfShadowEntry;
 import fp.yeyu.tos.enchanments.TotemCurse;
+import fp.yeyu.tos.item.TotemOfShadowItem;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.item.ItemStack;
@@ -17,7 +17,7 @@ public class EnchantmentHelperMixin {
 
     @Inject(method = "getPossibleEntries", at = @At("HEAD"), cancellable = true)
     private static void onGetPossibleEntries(int power, ItemStack stack, boolean treasureAllowed, CallbackInfoReturnable<List<EnchantmentLevelEntry>> cir) {
-        if (stack.getItem() != TotemOfShadowEntry.INSTANCE.getTotemOfShadow()) return;
+        if (stack.getItem() != TotemOfShadowItem.INSTANCE) return;
         cir.setReturnValue(TotemCurse.Companion.getEnchantments(power));
     }
 }

@@ -8,17 +8,18 @@ import net.minecraft.item.Item
 import net.minecraft.item.ItemGroup
 import net.minecraft.item.ItemStack
 import net.minecraft.item.ItemUsageContext
-import net.minecraft.nbt.ListTag
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Rarity
 import org.apache.logging.log4j.LogManager
 
-class TotemOfShadowItem : Item(Settings()
+object TotemOfShadowItem : Item(Settings()
         .rarity(Rarity.RARE)
         .group(ItemGroup.MISC)
-        .maxCount(1)
+        .maxDamage(4)
 ) {
+    private val LOGGER = LogManager.getLogger()
+
     override fun useOnBlock(context: ItemUsageContext): ActionResult {
         if (context.world !is ServerWorld) return super.useOnBlock(context)
         val player = context.player ?: return super.useOnBlock(context)
@@ -44,10 +45,10 @@ class TotemOfShadowItem : Item(Settings()
         return ActionResult.CONSUME
     }
 
-    companion object {
-        private val LOGGER = LogManager.getLogger()
-    }
-
     override fun getEnchantability(): Int = 5
     override fun isEnchantable(stack: ItemStack?): Boolean = true
+
+    override fun canRepair(stack: ItemStack?, ingredient: ItemStack?): Boolean {
+        return ingredient.let { it != null && it.item == this }
+    }
 }
