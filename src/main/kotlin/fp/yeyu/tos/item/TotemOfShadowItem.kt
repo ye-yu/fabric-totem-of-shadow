@@ -6,6 +6,7 @@ import net.minecraft.enchantment.EnchantmentHelper
 import net.minecraft.entity.SpawnReason
 import net.minecraft.item.Item
 import net.minecraft.item.ItemGroup
+import net.minecraft.item.ItemStack
 import net.minecraft.item.ItemUsageContext
 import net.minecraft.nbt.ListTag
 import net.minecraft.server.world.ServerWorld
@@ -47,6 +48,6 @@ class TotemOfShadowItem : Item(Settings()
         private val LOGGER = LogManager.getLogger()
     }
 
-    override fun getEnchantability(): Int = 1
-
+    override fun getEnchantability(): Int = 5
+    override fun isEnchantable(stack: ItemStack?): Boolean = true
 }

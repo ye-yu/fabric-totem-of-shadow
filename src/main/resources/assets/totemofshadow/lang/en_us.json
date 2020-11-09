@@ -8,5 +8,9 @@
   "item.minecraft.potion.effect.tos_health_boost_potion": "Potion of Life",
   "item.minecraft.potion.effect.tos_health_boost_ii_potion": "Potion of Life II",
   "subtitles.totemofshadow.entity.spirit_entity_ambient": "Spirit grieved",
-  "subtitles.totemofshadow.entity.shadow_entity_spawned": "Shadow spawned"
+  "subtitles.totemofshadow.entity.shadow_entity_spawned": "Shadow spawned",
+  "enchantment.totemofshadow.totem_fire_curse": "Totem Curse of Fire",
+  "enchantment.totemofshadow.totem_explosion_curse": "Totem Curse of Explosion",
+  "enchantment.totemofshadow.totem_thorns_curse": "Totem Curse of Thorns",
+  "enchantment.totemofshadow.totem_resistance_curse": "Totem Curse of Resistance"
 }

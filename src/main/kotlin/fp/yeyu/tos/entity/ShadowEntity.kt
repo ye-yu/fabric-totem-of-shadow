@@ -1,9 +1,13 @@
 package fp.yeyu.tos.entity
 
 import fp.yeyu.tos.TotemOfShadowEntry
+import fp.yeyu.tos.enchanments.TotemCurseOfExplosion
+import fp.yeyu.tos.enchanments.TotemCurseOfFire
+import fp.yeyu.tos.enchanments.TotemCurseOfThorns
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.network.ClientPlayerEntity
 import net.minecraft.client.network.OtherClientPlayerEntity
 import net.minecraft.client.network.PlayerListEntry
@@ -12,6 +16,7 @@ import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.enchantment.Enchantment
 import net.minecraft.enchantment.ProtectionEnchantment
+import net.minecraft.enchantment.ThornsEnchantment
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.EquipmentSlot
@@ -22,6 +27,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.entity.mob.MobEntity
 import net.minecraft.entity.mob.PathAwareEntity
 import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.item.BowItem
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.Packet
@@ -33,7 +39,9 @@ import net.minecraft.util.Arm
 import net.minecraft.util.Identifier
 import net.minecraft.util.collection.DefaultedList
 import net.minecraft.util.math.Box
+import net.minecraft.world.GameRules
 import net.minecraft.world.World
+import net.minecraft.world.explosion.Explosion.DestructionType
 import java.util.*
 
 class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world: World?) : PathAwareEntity(shadowEntityEntityType, world) {
@@ -50,6 +58,9 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
 
     private var updateMobCallingTick = 5
     private var fireProtectionLevel = 0
+    private var blastProtectionLevel = 0
+    private var explosionCount: Int = 0
+    private var thornsLevel: Int = 0
 
     companion object {
         private val TRACKED_COPYING_UUID = DataTracker.registerData(ShadowEntity::class.java, TrackedDataHandlerRegistry.OPTIONAL_UUID)
@@ -154,6 +165,9 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
         tag.putUuid("copyingUuid", uuid)
         tag.putString("copyingName", copyingEntity?.entityName ?: entityName)
         tag.putInt("fireProtectionLevel", fireProtectionLevel)
+        tag.putInt("blastProtectionLevel", blastProtectionLevel)
+        tag.putInt("explosionCount", explosionCount)
+        tag.putInt("thornsLevel", thornsLevel)
     }
 
     override fun readCustomDataFromTag(tag: CompoundTag) {
@@ -173,6 +187,18 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
         if (tag.contains("fireProtectionLevel")) {
             fireProtectionLevel = tag.getInt("fireProtectionLevel")
         }
+
+        if (tag.contains("blastProtectionLevel")) {
+            blastProtectionLevel = tag.getInt("blastProtectionLevel")
+        }
+
+        if (tag.contains("explosionCount")) {
+            explosionCount = tag.getInt("explosionCount")
+        }
+
+        if (tag.contains("thornsLevel")) {
+            thornsLevel = tag.getInt("thornsLevel")
+        }
     }
 
     private fun setCustomName(copyingName: String) {
@@ -187,7 +213,8 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
             else -> super.handleStatus(status)
         }
     }
-     private val spread = arrayOfNulls<IntArray>(9)
+
+    private val spread = arrayOfNulls<IntArray>(9)
 
     init {
         spread[0] = intArrayOf(-1, 0, -1)
@@ -234,23 +261,43 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
     }
 
     fun setAttributeFromEnchantment(enchantment: Enchantment, level: Int) {
-        when(enchantment) {
-            is ProtectionEnchantment -> {
-                if (enchantment.protectionType != ProtectionEnchantment.Type.FIRE) return
-                fireProtectionLevel = level + 1
-            }
+        when (enchantment) {
+            is TotemCurseOfFire -> fireProtectionLevel = level
+            is TotemCurseOfExplosion -> blastProtectionLevel = level
+            is TotemCurseOfThorns -> thornsLevel = level
             else -> return
         }
     }
 
     override fun damage(source: DamageSource, amount: Float): Boolean {
+        if (!super.damage(source, amount)) return false
         damageByFire(source.attacker)
-        return super.damage(source, amount)
+        damageByExplosion()
+        damageByThorns(source.attacker, amount)
+        return true
+    }
+
+    private fun damageByThorns(attacker: Entity?, amount: Float) {
+        val attackerEntity = attacker ?: return
+        val damageAmount = 0.8f * thornsLevel
+        attackerEntity.damage(DamageSource.mob(this), amount * damageAmount)
+    }
+
+    private fun damageByExplosion() {
+        if (world.isClient || blastProtectionLevel == 0) return
+        val destructionType = if (world.gameRules.getBoolean(GameRules.DO_MOB_GRIEFING)) DestructionType.DESTROY else DestructionType.NONE
+        val radius = blastProtectionLevel * 0.8f
+        world.createExplosion(this, this.x, this.y, this.z, 3f * radius, destructionType)
+        explosionCount++
+        if (random.nextDouble() < 0.25 * explosionCount) {
+            dead = true
+            remove()
+        }
     }
 
     private fun damageByFire(attacker: Entity?) {
         val attackerEntity = attacker ?: return
-        attackerEntity.setOnFireFor(4 * fireProtectionLevel)
+        attackerEntity.setOnFireFor(3 * fireProtectionLevel)
     }
 
     private class ShadowRunGoal(mob: ShadowEntity) : EscapeDangerGoal(mob, 0.75) {

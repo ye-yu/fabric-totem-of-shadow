@@ -2,10 +2,14 @@ package fp.yeyu.tos
 
 import fp.yeyu.tos.client.ShadowEntityRenderer
 import fp.yeyu.tos.client.SpiritEntityRenderer
+import fp.yeyu.tos.enchanments.TotemCurseOfExplosion
+import fp.yeyu.tos.enchanments.TotemCurseOfFire
+import fp.yeyu.tos.enchanments.TotemCurseOfResistance
+import fp.yeyu.tos.enchanments.TotemCurseOfThorns
 import fp.yeyu.tos.entity.EntityLookAtS2CPacket
-import fp.yeyu.tos.entity.SpiritEntityHeadingToS2CPacket
-import fp.yeyu.tos.entity.SpiritEntity
 import fp.yeyu.tos.entity.ShadowEntity
+import fp.yeyu.tos.entity.SpiritEntity
+import fp.yeyu.tos.entity.SpiritEntityHeadingToS2CPacket
 import fp.yeyu.tos.item.TotemOfShadowItem
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.api.ModInitializer
@@ -52,6 +56,12 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
     private val shadowEntitySpawnedId = Identifier(NAMESPACE, "shadow_entity_spawned")
     internal val shadowEntitySpawnedSound = SoundEvent(shadowEntitySpawnedId)
 
+    // enchantments
+    private val totemCurseOfFireId = Identifier(NAMESPACE, TotemCurseOfFire.identifierPath)
+    private val totemCurseOfExplosionId = Identifier(NAMESPACE, TotemCurseOfExplosion.identifierPath)
+    private val totemCurseOfThornsId = Identifier(NAMESPACE, TotemCurseOfThorns.identifierPath)
+    private val totemCurseOfResistanceId = Identifier(NAMESPACE, TotemCurseOfResistance.identifierPath)
+
     override fun onInitialize() {
         Registry.register(Registry.ITEM, totemOfShadowId, totemOfShadow)
         Registry.register(Registry.ITEM, spiritEssenceId, spiritEssence)
@@ -69,6 +79,12 @@ object TotemOfShadowEntry : ModInitializer, ClientModInitializer {
         Registry.register(Registry.SOUND_EVENT, spiritEntityAmbientId, spiritEntityAmbientSound)
         Registry.register(Registry.SOUND_EVENT, shadowEntitySpawnedId, shadowEntitySpawnedSound)
         logger.info("Registered sound events")
+
+        Registry.register(Registry.ENCHANTMENT, totemCurseOfFireId, TotemCurseOfFire)
+        Registry.register(Registry.ENCHANTMENT, totemCurseOfExplosionId, TotemCurseOfExplosion)
+        Registry.register(Registry.ENCHANTMENT, totemCurseOfThornsId, TotemCurseOfThorns)
+        Registry.register(Registry.ENCHANTMENT, totemCurseOfResistanceId, TotemCurseOfResistance)
+        logger.info("Registered enchantments")
     }
 
     override fun onInitializeClient() {
