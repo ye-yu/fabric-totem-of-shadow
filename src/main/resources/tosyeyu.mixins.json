@@ -4,7 +4,6 @@
   "compatibilityLevel": "JAVA_11",
   "mixins": [
     "AnvilScreenHandlerMixin",
-    "ClientPlayerNetworkHandlerMixin",
     "DefaultBiomeCreatorMixin",
     "EnchantmentHelperMixin",
     "LivingEntityRendererMixin"

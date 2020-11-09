@@ -288,6 +288,7 @@ class ShadowEntity(shadowEntityEntityType: EntityType<out ShadowEntity>?, world:
     }
 
     private fun damageByThorns(attacker: Entity?, amount: Float) {
+        if (thornsLevel == 0) return
         val attackerEntity = attacker ?: return
         val damageAmount = 0.8f * thornsLevel
         attackerEntity.damage(DamageSource.mob(this), amount * damageAmount)
